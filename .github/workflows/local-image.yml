@@ -1,0 +1,35 @@
+# Builds the OpenMAIC Docker image for one machine that lacks the memory to
+# build it, and hands it over as a workflow artifact (`docker load` there).
+# Run by hand only.
+name: Local image
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit to build
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Build
+        run: docker build --tag openmaic-openmaic:latest .
+      - name: Save
+        run: |
+          docker save openmaic-openmaic:latest | gzip -1 > openmaic-image.tar.gz
+          ls -lh openmaic-image.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openmaic-image
+          path: openmaic-image.tar.gz
+          retention-days: 3
+          compression-level: 0
